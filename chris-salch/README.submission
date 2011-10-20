@@ -1,0 +1,313 @@
+-*- mode: markup; -*-
+
+* Code Challenge: Markup
+
+* The task
+
+The challenge, as accepted it, was to provide:
+
+  # \i{The source code to a parser that, given the contents of a file in
+    whatever form is natural for your language of choice—perhaps as an
+    open stream or a string—returns a data structure representing the
+    document tree as described in the [Markup specification] if the
+    file is syntactically correct.}
+
+    You find the code to what I would conisder a reasonable parser for
+    Markup provided in src/lib.  Specifically, the Perl modules 
+    \code{Markup::Tokenizer} and \code{Markup::Parser}.
+
+  # \i{English language documentation for the data structure returned by
+    the parser sufficient to allow a programmer familiar with your
+    implementation language to write a back-end that generates some
+    kind of output from the results returned by the parser.}
+
+    Descriptions of the data structures returned by Markup::Parser may 
+    be found in the pod\note{pod or 'Plain Old Documentation' is a standard 
+    form of in line documentation used throughout Perl.  It can be viewed 
+    using he \code{perldoc} utility like so:
+
+       % perldoc Module::Parser
+       % perldoc Module::Tree
+
+    in location where perldoc can find the module in question.} documentation.
+    A more detailed description will be provided towards the end of this 
+    document. 
+
+  # \i{The source code to a sample back-end that generates well-formed
+    XML according to the “Trivial XML backend” section of the
+    spec.\note{We don’t use XML because we have any great love for it
+    but because it is a reasonable lowest-common-denominator format.}}
+
+    A back-end meeting that above criteria can be found in the Perl
+    module \code{Markup::Backend::XML}.  The back-end as an example:
+    
+       use Markup::Parser;
+       use Markup::Tokenizer;
+       use Markup::Backend::XML;
+       
+       my $tokenizer=Markup::Tokenizer->new(links => $links);
+       my $parser=Markup::Parser->new(tokenizer => $tokenizer);
+       my $backend=Markup::Backend::XML->new();
+
+       # code to retrieve $source
+
+       my $tree=$parser->parse($source);
+       
+       my $string=$backend->string($tree);
+  
+  # \i{The source code to a driver program that, given the name of a
+    file, parses the file and then generates a corresponding XML file.}
+
+    The file markup.pl in src should fulfill this particular requirement.
+    
+      - In a pipe:
+         
+	   % cat test | markup.pl | less
+
+      - To stdout:
+      
+           % markup.pl test | less
+
+      - To a file
+      
+           % markup.pl test -o test.xml
+
+    You may also pass it the argument \code{--no-links} to turn off link 
+    processing as required by the spec.
+
+  # \i{Any libraries you use beyond those that are normally part of an
+    installation of your chosen programming language.}
+
+    Everything used is core Perl according to \code{Module::CoreList}.
+
+  # \i{Any build instructions or scripts are needed to build the driver
+    program or instructions how to run it if it requires no separate
+    building.}
+
+    Since this is Perl, there really aren't any build instructions.  The 
+    shebang \node{For the users of that other operating system out there, 
+    shebang it the \code{#!/usr/bin/perl} at the top of the script.  It 
+    tells the system what program to use as an interpreter for the file.}
+    assumes that perl is in /usr/bin.  Test cases can be run by calling 
+    \code{prove} in the root directory of the project.  It should be able
+    to locate the test files located in the t directory.
+
+  # \i{Optionally, any notes about your experience implementing this
+    code: how you came up with your design, blind alleys you went up,
+    or surprising problems you ran into. Or anything else you want to
+    share.}
+
+    The commit log for this repository contains a good deal of these. I will
+    definitely be fleshing things about a bit more here as well.
+
+
+* Architectural Structure
+
+The processor is broken down into four components, two of which
+contain the AST generation code, \code{Markup::Tokenizer} and
+\code{Markup::Parser}, one being the output back-end,
+\code{Markup::Backend::XML}, and the last being the \code{markup.pl}
+driver script.  With the exception of \code{markup.pl}, each of these
+represents a pass through a representation of the source data.  The
+entirety of the source data is loaded into a scalar variable and
+parsed as a whole to simplifying the parsing process.
+
+** Markup::Tokenizer
+
+The tokenizer is really a lexer in the spirit of lex.  It uses an
+array of prioritized regular expressions to match individual tokens
+within a string of text.  Once a token is matched, the matched text is
+removed from the beginning of the string and a new token search is
+started. If no token can be found at the start of the string, the
+tokenizer attempts to find the earliest match for any token that it
+can match.  Anything between the current start of the string and that
+token is considered a raw text token.
+
+Potential tokens are compared to a list of simple "must follow" rules
+to determine if a given token is legal in the current location.  If a
+rule is found for the given token, it is compared to the previously
+matched token.  Tokens which are found to not follow a token listed in
+their rule are either deleted, as in the case of an emacs mode line,
+or converted into a text token.  When completed, \code{tokenize} will
+return an array or arrays containing a token symbol followed by the
+text matched to produce that symbol.
+
+** Markup::Parser
+
+Initially, designing a parser for Markup seemed to pose several rather
+annoying problems.  Once being that the language appeared to have
+elements of context that would prevent a reasonable representation of
+the grammar that could be understood by yacc or bison.  A more
+detailed analysis of the spec by a more schooled eye might reach a
+different conclusion.  As such, it seemed logical to build a recursive
+decent style parser \note{Assuming that I have the definition right.}
+rather than look for parser generator tools.
+
+Parsing is primarily handled by looking up each initial token in a
+hash and mapping those tokens to a more specific processing function.
+This helps to keep the primary parsing loop free of extraneous
+\code{if ... elsif ... elsif ... else} combinations and simplify the
+overall parsing logic greatly.  Each specific parsing function uses a
+combination of rewriting tokens in the token stream and recursion as a
+means of handling the various Markup structures.  For instance,
+\code{\[} is converted from a \code{LINK_BLOCK_START} token into
+\code{ESCAPE}, text, and \code{TAG_BLOCK_START} tokens.  This allows
+for reuse of the tagged markup code for links rather than rewriting
+special logic for them.
+
+Headers and indent sections are matched as single tokens by the
+tokenizer and parsed further within the parser.  Trying to match them
+as multiple tokens turned out to be more problematic than it was
+worth.  Initial designs attempted to treat two and three space
+combinations as separate tokens.  Counting these tokens in the parser
+to determine a degree of indention required a rather complex while
+loop which did little more than determine the length of the initially
+matched block of white space. Header tags caused a similar problem as
+they where initially treated as two kinds of a tokens, a '*' and a '*
+' token.
+
+Rather than try to deal with the added complexity of treating them as
+separate tokens, it made more sense to treat indentation as a single
+token.  A can follow rule in the tokenizer and a code to determine the
+length of matched text virtually eliminated the parsing complexity.
+Similar code, accounting for the extra space at the end of a header,
+greatly simplified header parsing.
+
+Empty paragraph tokens parsed as normal and consumed when appending to
+the body of a \code{Module::Tree} object.  Any attempt to deal with
+these in the parse directly would require tracking checking the state
+of the node being currently constructed in every place where a new
+child node is added.  As such, doing empty checking
+\code{Module::Tree::append_node} greatly simplifies the calling code.
+
+** Markup::Backend::XML
+
+The trivial XML back-end is meant solely as a proof of concept and
+means of testing the entire processing stack.  Its output is designed
+to match the test xml documents provided with these instructions as
+closely as possible.  The one exception to this rule has to do with
+the way that links are processed, link_def elements are all on one
+line rather than spread out over several.
+
+As a general rule, constructing an output document involves walking a
+given \code{Markup::Tree} in a recursive manner.  Each tree node has a
+\code{body} member which may contain either a text scalar or a reference to a
+child \code{Markup::Tree} node.  Child nodes are processed by calling
+the \code{string} while text nodes are escaped and added to the output
+document.  
+
+Indentation is handled via a string of spaces constructed based on the
+current call depth.  Nodes with the \code{inline} flag set do not
+receive indentation or newlines.  Tags with the \code{subdocument}
+flag set append an extra layer of indentation to avoid skewing the
+indentation of a the parent node.
+
+** Markup::Tree
+
+\code{Markup::Tree} contains state for \code{Markup::Parser} and the AST
+representation of a parsed Markup document.  The internal members 
+\code{indent}, \code{text}, and \code{node} are used by the parser to 
+maintain state while processing.  \code{indent} stores the current degree
+of indentation while \code{text} and \code{node} are a representation of
+the node being constructed.  Once a node is completed, the \code{body} 
+member holds the children of the current node and \code{name} is self 
+exploratory.
+
+Using \code{Markup::Tree} in this manner does pollute the AST with data
+members that have very little to do with document structure.  The trade off
+from not having to create two data structures in parallel does seem to
+outweigh the added noise.
+
+** Markup::Base
+
+While this code could be considered "reinventing the wheel", the few features
+required by this parse did not warrant pulling in \code{Moose} or another
+OO framework.  \code{Markup::Base} attempts to provide a reasonable default
+constructor, a means of requiring certain arguments, and a means of specifying
+default values for fields.  
+
+The \code{AUTOLOAD} method is a special function in perl which handles calls 
+to undefined methods.  By explicitly turning off a portion of the strict pragma
+with \code{no strict 'refs';} it is possible to use a scalar as a reference value.
+In combination with perl type globs, this allows us to modify the symbol table for 
+a given package (which represents a class definition) and create field accessor
+methods at runtime.  The \code{lvalue} attribute also allows created accessor 
+methods to be assigned to as though they were variables rather than functions.
+
+
+* Implementation Notes
+
+   Source Statistics:
+     127   371  2328 ./src/lib/Markup/Tree.pm
+     116   316  2431 ./src/lib/Markup/Backend/XML.pm
+      74   210  1591 ./src/lib/Markup/Tester.pm
+      54   158   982 ./src/lib/Markup/Util.pm
+     219   766  5333 ./src/lib/Markup/Tokenizer.pm
+     653  1831 13732 ./src/lib/Markup/Parser.pm
+     139   334  2588 ./src/lib/Markup/Base.pm
+     124   318  2371 ./src/markup.pl
+      72   125   880 ./t/make_tests.pl
+    1578  4429 32236 total
+
+   Commit Count:  128
+
+While the commit count will be out of date buy the time I finish this
+document, the rest of the numbers should be pretty accurate.  It's
+somewhat amazing to me how little code there actually is in this
+parser.  The entirety of the lexing code fits in 219 lines with added
+noise form pod.  I'm very certain that there is someone who could do
+it in less and that it probably has been done in significantly less.
+It's still amazing too me how little perl you need to accomplish
+things.
+
+One of the things that I had wanted to do here build a parser that
+didn't use a parser generator.  I've built a few flex/bison based
+parsers and interpreters in the past but have not constructed any
+non-trivial parsers by hand.  Of course, as I stated above, the Markup
+specification did appear somewhat daunting when I tried to mentally
+think of it in terms of BNF form.  More than anything I had a mental
+block around trying to define a syntactic ruleset which used arbitrary
+whitespace.  If I were to try it now, I might be able to come up with
+something, having examined the rules in detail.
+
+De-denting also proved to be an interesing issue.  Keeping track of the 
+current degree of indentation and how much the next line has changed in 
+relation to the current one is not all that difficult.  Determining 
+exactly where in the parsing process you should de-dent and when to 
+de-dent without special indentation is an entirely different matter.
+
+One thing I that I really like about working with perl is the native 
+hash implementation.  Java has them as a container class, I know there 
+are C and C++ implementations that can be considred cannon but I really
+like not having to think about them in great detail.  It makes certain 
+kinds of things very easy to accomplish.  
+
+For instance, perl does not have the equivalent of a switch/case
+construct that other languages do.  My preferred method of
+accomplishing the same thing is to use a hash as a lookup table for
+function ref's.  I'm not really sure how they compare in performance
+to a chain of \code{if ... elsif} constructs but, they do make things
+a heck of a lot simpler to read.  Compare the v1.1 and v1.0 tag in my 
+git repository.  The \code{_parse_internal} funciton goes from being a
+rather opaque \code{if ... elsif} chain to a reasonable simple loop.
+Once you understand what the loop does you barely have to think about it
+anymore and use the \code{%parse_funciotion} hash to see how each of 
+token is mapped.
+
+As to the rest of the structure in \code{Markup::Parser}, I'm not really
+sure how much I like it.  The portions that do token rewriting are a 
+little tricky to understand if you just look at them cursorily.   For
+instance, the order of tokens being unshifted is reverse of what you might
+initially think it should be.  Since \code{unshift} behaves equivalently
+to \code{push} to the front side of an array, they have to be in that 
+order.
+
+There are also some places where returning through multiple layers of
+the call stack necessitated adding in a throwaway token.  The reasoning
+behind this might not be immedately obvious unless you can keep track of 
+the state of the processing loop in multiple layers of the call stack.
+
+
+Overall, I'd say this was a pretty interesting build.  It gave me a chance
+to try out a few things I hadn't done before.
+

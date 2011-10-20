@@ -1,0 +1,20 @@
+\note{Markup was originally developed in
+Lisp where the obvious representation for a Markup document is as
+s-expressions, with each tree represented by a list whose first
+element is a symbol indicating the tree’s tag.
+
+   (:body
+     (:h1 "This is a header")
+     (:p "This is a paragraph")
+     (:p "This is another paragraph with some" (:i "italic") " text in it."))
+
+This kind of tree structure also has an obvious representation in XML
+or HTML:
+
+   <body>
+     <h1>This is a header</h1>
+     <p>This is a paragraph</p>
+     <p>This is another paragraph with some <i>italic</i> text in it.</p>
+   </body>
+
+}

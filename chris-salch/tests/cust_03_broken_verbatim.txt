@@ -1,0 +1,16 @@
+** Grammar
+
+As mentioned above, the Markup grammar defines a mapping between a
+Markup document and an abstract syntax tree. The tree is built out of
+tagged elements and strings.\note{Markup was originally developed in
+Lisp where the obvious representation for a Markup document is as
+s-expressions, with each tree represented by a list whose first
+element is a symbol indicating the tree’s tag.
+
+   (:body
+     (:h1 "This is a header")
+     (:p "This is a paragraph")
+     (:p "This is another paragraph with some" (:i "italic") " text in it."))
+
+} The abstract syntax tree is rooted in a single element whose tag is
+\code{body}. Its children are the elements described below.

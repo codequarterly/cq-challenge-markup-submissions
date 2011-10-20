@@ -1,0 +1,3 @@
+We can't have a [document \note{tag inside ]a link.
+
+That wouldn't work.}

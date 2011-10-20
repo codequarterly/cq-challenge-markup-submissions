@@ -1,0 +1,2 @@
+This [link is missing a terminating
+] before the end of the line the link was on.

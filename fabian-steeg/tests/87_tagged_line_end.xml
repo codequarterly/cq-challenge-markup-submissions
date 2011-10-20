@@ -1,0 +1,7 @@
+<body>
+	<p>A paragraph consisting solely of text in <code>[]</code>s followed by zero or more spaces followed by text enclosed in <code>&lt;&gt;</code>s is parsed as an element tagged <code>link_def</code> whose two children are a <code>link</code> element comprising the text between the <code>[]</code>s and a <code>url</code> element comprising the text between the <code>&lt;&gt;</code>s.
+    <note>
+        <p>The idea is that a Markup backend would render all the in-text <code>link</code> elements as hyperlinks with the <code>link</code> text linking to the URL given in the corresponding <code>link_def</code> element.</p>
+    </note>
+     A given Markup processor can choose to implement the link syntax or not and, if it does, may provide a way to indicate whether or not it should be used when parsing a given document.</p>
+</body>

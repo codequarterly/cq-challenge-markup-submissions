@@ -1,0 +1,3 @@
+This document has
+an error on the third line,
+so we're testing line \number reporting here

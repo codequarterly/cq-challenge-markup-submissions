@@ -1,0 +1,60 @@
+h1. Fork-specific information
+
+_Prerequisites:_ "Scala 2.8.0":http://www.scala-lang.org/downloads (for running), "SBT":http://code.google.com/p/simple-build-tool/ (optional, for building)
+
+h2. Command-line usage (parse input, XML output)
+
+In the project directory, run @markup.scala@ with the markup file to process, e.g. @./markup.scala terms.txt@, or @./markup.scala terms.txt > terms.xml@ to redirect to a result file.
+
+If you are on Windows or have trouble with the script, you can also launch it with @scala -cp markup.jar markup.scala@, e.g. @scala -cp markup.jar markup.scala terms.txt@
+
+h2. API usage (parse input, XML output, transform data structure)
+
+To use the API, add @markup.jar@ to your classpath, import the @Markup@ object members, and have your markup input as a @String@:
+
+bc. import com.quui.markup.Markup._
+val input = scala.io.Source.fromFile("terms.txt").mkString
+
+Using the API, you can parse markup to a tree structure:
+
+bc. val body = parse(input) // optional: pass sub-document tag pattern
+
+The parsed structure can be exported as XML:
+
+bc. val xml = toXml(body) // optional: pass XML pretty printing toggle
+
+The parsed structure can be processed using pattern matching, e.g. for XML export:
+
+bc. def toXml(elem: Element): Node = elem match {
+  case TextElement(text) => Text(text)
+  case m@_ => Elem(null, m.tag, Null, xml.TopScope, m.children.map(toXml): _*)
+}
+
+The code above recursively processes the tree by handling only two cases explicitly: text nodes and other elements. To handle more elements explicitly, matching patterns and processing rules can be added, e.g.:
+
+bc. def toXml(elem: Element): Node = elem match {
+  case TextElement(text) => Text(text)
+  case Body(items) => <body>{ items.map(toXml) }</body>
+  case Pre(text) => <pre>{ text }</pre>
+  case LinkDef(link@_, Url(url)) => <link_def>{ toXml(link) }<url>{ url }</url></link_def>
+  // ...
+}
+
+Complete Scaladoc API documentation is available in the @markup-docs.zip@ file.
+
+h2. Building and running the tests
+
+In @sbt@, run @update@, @test@, @doc@, @package@ to build, test, doc and deploy to the @target@ directory. After a first build in SBT, the project can also be used in the Scala IDE for Eclipse.
+
+h1. General information
+
+The files in this directory are those you'll need to participate in the inaugural Code Quarterly Code Challenge which you can read about "here":http://www.codequarterly.com/code-challenges/markup/
+
+* @instructions.txt@: Instructions for this challenge.
+* @markup-spec.txt@: The Markup specification
+* @tests/@: a bunch of test cases you can use to test your implementation. (Additionally all the .txt files in this directory as well as the original version of this README are examples of real-world Markup files.)
+* @terms.txt@: The fine print you’ll have to agree to before you submit your code.
+
+When you’re done, you can submit your code "here":http://www.codequarterly.com/code-challenges/markup/submit.html
+
+On that page, after agreeing to the legal terms, you’ll can either upload an archive (tar.gz or zip) containing your code or the URL of a commit on a publicly available GitHub repository.

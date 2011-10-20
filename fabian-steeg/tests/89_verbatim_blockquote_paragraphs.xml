@@ -1,0 +1,9 @@
+<body>
+<pre>This is a regular paragraph.
+
+  This is a block quote.\note{This is a footnote within the
+  block quote.
+
+  This is a second paragraph in the footnote.} Back to the
+  block quote paragraph.</pre>
+</body>

@@ -1,0 +1,3 @@
+This is a regular paragraph.\note{This is an embedded note.\note{With an embedded
+
+Multi-paragraph note} Back to regular.} Here's the rest of the outer paragraph.

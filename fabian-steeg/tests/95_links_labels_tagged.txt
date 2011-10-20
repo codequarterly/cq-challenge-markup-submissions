@@ -1,0 +1,1 @@
+Regular [text] with [\i{some}] [\b{tagged links}|foo] blah.

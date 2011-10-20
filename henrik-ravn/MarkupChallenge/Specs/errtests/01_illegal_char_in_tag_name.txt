@@ -1,0 +1,1 @@
+This file has an illegal character in a \ta*g{so there} 

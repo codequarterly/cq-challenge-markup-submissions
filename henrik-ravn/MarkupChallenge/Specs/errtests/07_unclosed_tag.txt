@@ -1,0 +1,2 @@
+This \note{tag is not closed before the
+end of the document.

@@ -1,0 +1,11 @@
+A paragraph consisting solely of text in \code{\[]}s followed by zero
+or more spaces followed by text enclosed in \code{<>}s is parsed as an
+element tagged \code{link_def} whose two children are a \code{link}
+element comprising the text between the \code{\[]}s and a \code{url}
+element comprising the text between the \code{<>}s.\note{The idea is
+that a Markup backend would render all the in-text \code{link}
+elements as hyperlinks with the \code{link} text linking to the URL
+given in the corresponding \code{link_def} element.} A given Markup
+processor can choose to implement the link syntax or not and, if it
+does, may provide a way to indicate whether or not it should be used
+when parsing a given document.

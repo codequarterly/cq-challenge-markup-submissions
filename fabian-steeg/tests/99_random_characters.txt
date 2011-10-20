@@ -1,0 +1,1 @@
+These characters `~!@#$%^&*()_+-=]|;:'"/?,<.> don't need escapes in regular text.

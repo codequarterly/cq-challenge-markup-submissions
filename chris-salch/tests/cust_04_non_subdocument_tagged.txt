@@ -1,0 +1,4 @@
+It would appear that tagged elements
+similar to \code{*} are not properly being 
+handled by the taging code.
+

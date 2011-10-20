@@ -1,0 +1,1 @@
+Regular [text] using a [link label with spaces|foo] blah.
