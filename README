@@ -1,2 +1,22 @@
 This repo contains the four submissions I received in the Code
-Quarterly Markup Code Challenge.
+Quarterly Markup Code Challenge. Due to the shuttering of Code
+Quarterly I will not be doing a more detailed write-up of these
+submissions, as originally planned.
+
+I do want to thank the four coders who submitted their code and
+acknowledge their effort: quite a number of people forked the code on
+GitHub but these four were the ones who followed through to
+completion:
+
+   Chris Salch, implementing in Perl
+
+   Fabian Steeg, implementing in Scala
+
+   Luis Pedro Coelho, implementing in Haskell
+
+   Henrik Ravn, implementing in F#
+
+You'll find their code in the subdirectories of this project. Read and
+enjoy.
+
+-Peter Seibel
